@@ -35,3 +35,11 @@ If you `conda install` or `pip install` any modules, you can add them to the `en
 conda env export --from-history > environment.yaml
 ```
 
+## Brief description of library files
+
+- `correct.py`: The main method that runs all corrections on gravimeter data.
+- `drift.py`:  Instrument drift corrections.
+- `elevation.py`: Elevation corrections, including free-air, Bouguer plate, and latitude.
+- `tidal.py`: Tidal corrections no measured gravity data.
+- `normal.py`: Computes normal gravity from referenced ellipsoid.
+

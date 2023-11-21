@@ -8,7 +8,7 @@ For implementation reference, see this [textbook](https://www.cambridge.org/core
 
 ## Getting started
 
-This repository uses conda for To create a new development environment with conda, run:
+This repository uses [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage python dependencies. To create a new development environment for this project with conda, run:
 
 ```sh
 conda env create -f environment.yaml

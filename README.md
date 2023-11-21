@@ -4,9 +4,9 @@ This package contains implementations of standard gravity corrections applied
 to measured gravimeter data for the detection of gravity anomalies on Earth's 
 surface.
 
-For implementation reference, see this [textbook](https://www.cambridge.org/core/books/fundamentals-of-geophysics/gravity-the-figure-of-the-earth-and-geodynamics/B593AA8DF4AD615E3F351CD065364488)
+For implementation reference, see this [textbook](https://www.eps.mcgill.ca/~courses/c510/%5BTurcotte_D.L.,_Schubert_G.%5D_Geodynamics(Bookos.org).pdf)
 
-## Getting started
+## Getting started 
 
 This repository uses [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) to manage python dependencies. To create a new development environment for this project with conda, run:
 

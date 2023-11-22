@@ -37,7 +37,7 @@ def parse_dates(df: pd.DataFrame) -> List[datetime]:
 
 
 def raw_to_mgal(raw: np.ndarray):
-    """Converts raw gravimeter data to microgals."""
+    """Converts raw gravimeter data to milligals."""
     # todo: implement
     return raw
 

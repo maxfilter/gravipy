@@ -37,9 +37,26 @@ def parse_dates(df: pd.DataFrame) -> List[datetime]:
 
 
 def raw_to_mgal(raw: np.ndarray):
-    """Converts raw gravimeter data to milligals."""
-    # todo: implement
-    return raw
+    """Converts raw gravimeter data to microgals.
+    
+    Args:
+        raw: Dial raw data red from the gravimeter.
+    
+    Returns:
+        Converted raw dial into mgal gravity data.
+    """
+    # Define interval factor and mgal conv value, values for 3800
+    int_factor = 1.05658 
+    mgal_val = 4008.94
+
+    # Get the last 2 digits of the number and multiply it by the interval factor
+    int_val = abs(raw) % 100
+    int_conv = int_val * int_factor
+
+    # Add tens_conv to mgal value
+    g_mgal = int_conv + mgal_val
+    
+    return g_mgal
 
 
 def correct(data_path: str):

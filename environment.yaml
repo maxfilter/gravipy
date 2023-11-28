@@ -3,9 +3,11 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.11
   - numpy
   - scikit-learn
-  - matplotlib
+  - python=3.11
   - pandas
+  - matplotlib
   - jupyter
+  - pip
+    - tidegravity

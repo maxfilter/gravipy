@@ -10,7 +10,6 @@ from gravipy.drift import instrument_drift_correction
 from gravipy.elevation import (
     free_air_correction,
     bouguer_plate_correction,
-    latitude_correction,
 )
 from gravipy.tidal import tidal_correction
 
@@ -78,7 +77,6 @@ def correct(data_path: str):
     g_measured = raw_to_mgal(gravimeter_raw)
 
     # calculate corrections
-    df["latitude_correction"] = latitude_correction(g_measured, lat)
     df["freeair_correction"] = free_air_correction(g_measured)
     df["bouguer_correction"] = bouguer_plate_correction(g_measured)
     df["tides_correction"] = tidal_correction(g_measured, dates)

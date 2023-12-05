@@ -24,9 +24,9 @@ def tidal_correction(df: pd.DataFrame) -> pd.DataFrame:
 
         lat = row["lat"]
         lon = row["lon"] # west should be entered as negative value
-        alt = row["alt"]
+        alt = row["orthometric height"]
         
         mg_correction = tide.solve_longman_tide_scalar(lat, lon, alt, time)
-        tidal_corrections[index] = mg_correction
+        tidal_corrections[index] = mg_correction[-1]
 
     return tidal_corrections

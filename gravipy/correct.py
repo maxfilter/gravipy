@@ -11,6 +11,7 @@ from gravipy.elevation import (
     free_air_correction,
     bouguer_plate_correction,
 )
+from gravipy.normal import normal_gravity
 from gravipy.tidal import tidal_correction
 
 
@@ -70,18 +71,22 @@ def correct(data_path: str):
     # load data
     df = pd.read_csv(data_path)
     dates = parse_dates(df)
-    lat = np.full(len(dates), 42.3603)  # todo: read from df
     gravimeter_raw = df["raw"].to_numpy()
 
     # convert gravimeter raw data to mgal
     g_measured = raw_to_mgal(gravimeter_raw)
 
+    H = df['orthometric height'].to_numpy()
+    g_normal = normal_gravity(df['lat'].to_numpy())
+
     # calculate corrections
-    df["freeair_correction"] = free_air_correction(g_measured)
-    df["bouguer_correction"] = bouguer_plate_correction(g_measured)
-    df["tides_correction"] = tidal_correction(g_measured, dates)
-    df["drift_correction"] = instrument_drift_correction(g_measured, dates)
+    df["freeair_correction"] = free_air_correction(g_normal, H)
+    df["bouguer_correction"] = bouguer_plate_correction(H)
+    df["tides_correction"] = tidal_correction(df)
+    # df["drift_correction"] = instrument_drift_correction(g_measured, dates)
 
     # todo: compute final anomaly
+    df["free air anomaly"] = g_measured + df["freeair_correction"] + df["tides_correction"] - g_normal
+    df["bouguer anomaly"] = df["free air anomaly"] - df["bouguer_correction"]
 
     return df

@@ -1,4 +1,4 @@
-"""Methods for computing corrections to and anomalies of gravimeter measurements."""
+"""Methods for computing gravity corrections and anomalies."""
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -44,7 +44,6 @@ def drift_correction(df: pd.DataFrame, is_base_station: np.ndarray):
     # fit linear model to base station measurements for each gravimeter
     # since each gravimeter may have a different drift rate
     for gravimeter in df["device"].unique():
-        is_base_station = df["floor"] == 2
         is_current_device = df["device"] == gravimeter
 
         # fit model to base station measurements

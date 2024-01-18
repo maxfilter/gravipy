@@ -14,7 +14,7 @@ RHO_CRUST = 2670  # density of crust [kg/m^3]
 accel_to_mGal = lambda a: a * 1e5
 
 
-def drift_correction(df: pd.DataFrame, is_base_station: np.ndarray):
+def drift_correction(df: pd.DataFrame, base_station_id: str):
     """Computes drift correction for each gravimeter.
 
     The drift correction is computed by fitting a linear model to the base station
@@ -28,7 +28,7 @@ def drift_correction(df: pd.DataFrame, is_base_station: np.ndarray):
 
     Args:
         df: gravimeter data with computed tidal corrections.
-        is_base_station: boolean array indicating which measurements were taken at a base station.
+        base_station_id: base station site identifier.
 
     Returns:
         drift correction for each measurement in mGals.
@@ -40,6 +40,9 @@ def drift_correction(df: pd.DataFrame, is_base_station: np.ndarray):
 
     # convert time to Julian date float
     t = pd.DatetimeIndex(df["time"]).to_julian_date()
+
+    # get indices of base station measurements
+    is_base_station = df["site id"].astype("string") == str(base_station_id)
 
     # fit linear model to base station measurements for each gravimeter
     # since each gravimeter may have a different drift rate
@@ -65,13 +68,12 @@ def drift_correction(df: pd.DataFrame, is_base_station: np.ndarray):
     return correction
 
 
-def compute_corrections(df: pd.DataFrame, is_base_station: np.ndarray):
+def compute_corrections(df: pd.DataFrame, base_station_id: str):
     """Computes corrections to measured gravity.
 
     Args:
         df: dataframe of loaded gravimeter data.
-        is_base_station: boolean array indicating which measurements were taken
-            at base stations, used for drift corrections.
+        base_station_id: base station site identifier, used for drift corrections.
 
     Returns:
         df: original dataframe with appended corrections and anomalies.
@@ -85,7 +87,7 @@ def compute_corrections(df: pd.DataFrame, is_base_station: np.ndarray):
         pd.DatetimeIndex(df["time"]).to_pydatetime(),
     )
 
-    df["drift correction [mGal]"] = drift_correction(df, is_base_station)
+    df["drift correction [mGal]"] = drift_correction(df, base_station_id)
 
     # units check: [m] * [m/s^2] * [1/m] -> [m / s^2]
     df["free air correction [mGal]"] = accel_to_mGal(

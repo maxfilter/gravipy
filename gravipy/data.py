@@ -5,6 +5,15 @@ import numpy as np
 import pandas as pd
 
 TIME_COLS = ["year", "month", "day", "hour", "minute"]
+REQUIRED_COLS = TIME_COLS + [
+    "lat",
+    "lon",
+    "alt [m]",
+    "device",
+    "counter",
+    "site id",
+    "orthometric height [m]",
+]
 
 
 def counter_to_mGal(raw: np.ndarray, device: np.ndarray, dial_conversion_dir: str):
@@ -55,6 +64,31 @@ def normal_gravity(lat: np.ndarray) -> np.ndarray:
     )
 
 
+def get_measurements_by_id(df: pd.DataFrame, site_id: str):
+    """Returns dataframe of measurements for id.
+
+    Args:
+        df: dataframe of loaded gravimeter data.
+        id: site identifier.
+
+    Returns:
+        df: dataframe of base station measurements.
+    """
+    is_site = df["site id"].astype("string") == str(site_id)
+    return df[is_site]
+
+
+def _check_columns(df: pd.DataFrame):
+    """Verify that all required columns are present in dataframe."""
+    missing_cols = []
+    for col in REQUIRED_COLS:
+        if col not in df.columns:
+            missing_cols.append(col)
+
+    if len(missing_cols):
+        raise ValueError(f"Missing required columns: {missing_cols} in dataframe.")
+
+
 def load_data(data_dir: str = "data", data_file: str = "gravimeter.csv"):
     """Loads data from csv file of gravimeter measurements.
 
@@ -65,6 +99,7 @@ def load_data(data_dir: str = "data", data_file: str = "gravimeter.csv"):
     - 'alt [m]': altitude in meters.
     - 'device': gravimeter used to measure gravity ('mit' or 'caltech').
     - 'counter': counter reading from gravimeter.
+    - 'site id': measurement site identifier. Each site should have a unique identifier.
     - 'orthometric height [m]': height above geoid in meters.
 
     Args:
@@ -78,6 +113,7 @@ def load_data(data_dir: str = "data", data_file: str = "gravimeter.csv"):
             - 'g_normal [m/s^2]': normal gravity in m/s^2.
     """
     df = pd.read_csv(os.path.join(data_dir, data_file))
+    _check_columns(df)
     df["time"] = pd.to_datetime(df[TIME_COLS])
     df["g_measured [mGal]"] = counter_to_mGal(df["counter"], df["device"], data_dir)
     df["g_normal [m/s^2]"] = normal_gravity(df["lat"])

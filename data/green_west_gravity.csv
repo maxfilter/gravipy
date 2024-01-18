@@ -1,4 +1,4 @@
-year,month,day,hour,minute,lat,lon,alt [m],device,counter,floor,orthometric height [m]
+year,month,day,hour,minute,lat,lon,alt [m],device,counter,site id,orthometric height [m]
 2023,11,20,13,27,42.3603,-71.0893,22.3455,mit,3836.96,2,15.748
 2023,11,20,13,36,42.3603,-71.0893,25.889,mit,3835.99,3,19.2913
 2023,11,20,13,41,42.3603,-71.0893,29.4315,mit,3834.9,4,22.8346

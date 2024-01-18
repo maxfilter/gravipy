@@ -4,6 +4,11 @@ channels:
   - defaults
 dependencies:
   - numpy
+  - harmonica
+  - xarray
+  - rioxarray
+  - verde
+  - pyproj
   - scikit-learn
   - python=3.11
   - pandas

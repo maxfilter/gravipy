@@ -1,9 +1,12 @@
 """Methods for loading and preprocessing gravimeter measurements."""
 import os
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
+from shapely import box
 
+WGS84_EPSG = 4326
 TIME_COLS = ["year", "month", "day", "hour", "minute"]
 REQUIRED_COLS = TIME_COLS + [
     "lat",
@@ -14,6 +17,10 @@ REQUIRED_COLS = TIME_COLS + [
     "site id",
     "orthometric height [m]",
 ]
+GMC_ZIP_URL = "https://www.conservation.ca.gov/cgs/Documents/Publications/Geologic-Data-Maps/GDM_002_GMC_750k_v2_GIS.zip"
+GMC_GEO_POLY_SHAPEFILE_PATH = "shapefiles/GMC_geo_poly.shp"
+GMC_GEOLOGY_URL = f"/vsizip/vsicurl/{GMC_ZIP_URL}/{GMC_GEO_POLY_SHAPEFILE_PATH}"
+CATALINA_WGS84_BBOX_COORDS = (-118.635060, 33.268233, -118.261344, 33.504121)
 
 
 def counter_to_mGal(raw: np.ndarray, device: np.ndarray, dial_conversion_dir: str):
@@ -64,20 +71,6 @@ def normal_gravity(lat: np.ndarray) -> np.ndarray:
     )
 
 
-def get_measurements_by_id(df: pd.DataFrame, site_id: str):
-    """Returns dataframe of measurements for id.
-
-    Args:
-        df: dataframe of loaded gravimeter data.
-        id: site identifier.
-
-    Returns:
-        df: dataframe of base station measurements.
-    """
-    is_site = df["site id"].astype("string") == str(site_id)
-    return df[is_site]
-
-
 def _check_columns(df: pd.DataFrame):
     """Verify that all required columns are present in dataframe."""
     missing_cols = []
@@ -87,6 +80,13 @@ def _check_columns(df: pd.DataFrame):
 
     if len(missing_cols):
         raise ValueError(f"Missing required columns: {missing_cols} in dataframe.")
+
+def load_geology():
+    bbox = gpd.GeoDataFrame({'geometry': [box(*CATALINA_WGS84_BBOX_COORDS)]}, crs=WGS84_EPSG)
+    return gpd.read_file(GMC_GEOLOGY_URL, bbox=bbox).to_crs(WGS84_EPSG).clip(bbox).set_index("PTYPE").drop("water")
+
+def load_geology_map_key(data_dir: str = "data", data_file: str = "GMC_map_key.xls"):
+    return pd.read_excel(os.path.join(data_dir, data_file), index_col="PTYPE")
 
 
 def load_data(data_dir: str = "data", data_file: str = "gravimeter.csv"):
@@ -112,9 +112,20 @@ def load_data(data_dir: str = "data", data_file: str = "gravimeter.csv"):
             - 'g_measured [mGal]': measured gravity in mGals.
             - 'g_normal [m/s^2]': normal gravity in m/s^2.
     """
+    # load raw data and verify that all required columns are present
     df = pd.read_csv(os.path.join(data_dir, data_file))
     _check_columns(df)
+
     df["time"] = pd.to_datetime(df[TIME_COLS])
     df["g_measured [mGal]"] = counter_to_mGal(df["counter"], df["device"], data_dir)
     df["g_normal [m/s^2]"] = normal_gravity(df["lat"])
-    return df
+
+    # build GeoDataFrame
+    geometry = gpd.points_from_xy(df["lon"], df["lat"])
+    gdf = gpd.GeoDataFrame(df, geometry=geometry, crs=WGS84_EPSG)
+
+    # include geology unit type for each feature
+    geology = load_geology()
+    gdf["geology"] = [geology.index[geology.contains(point)][0] for point in gdf.geometry]
+    
+    return gdf

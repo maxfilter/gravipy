@@ -1,4 +1,5 @@
 """Methods for computing gravity corrections and anomalies."""
+
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -7,11 +8,13 @@ import tidegravity as tide
 # constants
 G = 6.673e-11  # Newton's gravitational constant [m^3/kg/s^2]
 R_EQUATOR = 6378.137e3  # equatorial radius [m]
-RHO_CRUST = 2670  # density of crust [kg/m^3]
+RHO_CRUST = 1000  # density of crust [kg/m^3]
+
 
 # unit conversions
-# gravitational acceleration [m/s^2] to gravity anomaly [mGal]
-accel_to_mGal = lambda a: a * 1e5
+def accel_to_mGal(a):
+    """Converts acceleration [m/s^2] to gravity anomaly [mGal]."""
+    return a * 1e5
 
 
 def drift_correction(df: pd.DataFrame, base_station_id: str):
@@ -36,34 +39,41 @@ def drift_correction(df: pd.DataFrame, base_station_id: str):
     correction = np.zeros(df.shape[0])
 
     # apply nonlinear tidal correction (all other corrections are linear)
-    g = df["g_measured [mGal]"] - df["tidal correction [mGal]"]
+    g = df["g_measured [mGal]"] - df["tidal correction [mGal]"] - df["g_normal [mGal]"]
 
-    # convert time to Julian date float
+    # convert time to Julian date (so that each datetime corresponds to a float number)
     t = pd.DatetimeIndex(df["time"]).to_julian_date()
 
-    # get indices of base station measurements
-    is_base_station = df["site id"].astype("string") == str(base_station_id)
+    # get indices corresponding to base station measurements
+    base_station_idxs = df["site id"].astype("string") == str(base_station_id)
 
-    # fit linear model to base station measurements for each gravimeter
-    # since each gravimeter may have a different drift rate
-    for gravimeter in df["device"].unique():
-        is_current_device = df["device"] == gravimeter
+    # apply a linear drift correction on each day for each gravimeter
+    for date in df["time"].dt.date.unique():
+        date_idxs = df["time"].dt.date == date
 
-        # fit model to base station measurements
-        g_base = g[is_base_station & is_current_device].to_numpy()
-        t_base = t[is_base_station & is_current_device].to_numpy()
+        for gravimeter in df["device"].unique():
+            device_idxs = df["device"] == gravimeter
 
-        X = t_base.reshape(-1, 1)
-        y = g_base
+            g_base = g[base_station_idxs & date_idxs & device_idxs].to_numpy()
+            t_base = t[base_station_idxs & date_idxs & device_idxs].to_numpy()
+            n_base_measurements = len(g_base)
 
-        model = LinearRegression().fit(X, y)
+            if n_base_measurements == 1:
+                # subtract constant offset so base station anomaly is 0
+                correction[date_idxs & device_idxs] = g_base[0]
+            elif n_base_measurements >= 2:
+                # fit a linear model between 2+ points collected on day
+                X = t_base.reshape(-1, 1)
+                y = g_base
 
-        # apply drift correction to all measurements for this gravimeter
-        # relative to the first base station measurement
-        X_pred = t[is_current_device].to_numpy().reshape(-1, 1)
-        device_correction = model.predict(X_pred) - g_base[0]
+                model = LinearRegression().fit(X, y)
 
-        correction[is_current_device] = device_correction
+                # apply drift correction to all measurements for this gravimeter
+                # relative to the first base station measurement
+                X_pred = t[date_idxs & device_idxs].to_numpy().reshape(-1, 1)
+                device_correction = model.predict(X_pred)
+
+                correction[date_idxs & device_idxs] = device_correction
 
     return correction
 
@@ -99,13 +109,16 @@ def compute_corrections(df: pd.DataFrame, base_station_id: str):
         2 * np.pi * RHO_CRUST * G * df["orthometric height [m]"]
     )
 
-    # compute anomalies
-    df["free air anomaly [mGal]"] = (
+    df["measured anomaly [mGal]"] = (
         df["g_measured [mGal]"]
         + df["tidal correction [mGal]"]
         - df["drift correction [mGal]"]
-        + df["free air correction [mGal]"]
         - df["g_normal [mGal]"]
+    )
+
+    # compute anomalies
+    df["free air anomaly [mGal]"] = (
+        df["measured anomaly [mGal]"] + df["free air correction [mGal]"]
     )
 
     df["bouguer anomaly [mGal]"] = (

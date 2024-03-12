@@ -1,2 +1,2 @@
 from gravipy.correction import compute_corrections 
-from gravipy.data import load_data, get_measurements_by_id
+from gravipy.data import load_data, load_geology, load_geology_map_key
